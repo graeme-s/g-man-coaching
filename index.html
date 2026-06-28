@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G Man Coaching</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f4f0;--s:#fff;--s2:#f0efe9;--b:rgba(0,0,0,0.08);--t:#0b0b0b;--t2:#52514e;--t3:#898781;--r:12px;--g:#1baf7a;--a:#eda100;--re:#e34948;--bl:#2a78d6}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a19;--s:#252523;--s2:#2e2e2c;--b:rgba(255,255,255,0.08);--t:#f5f4f0;--t2:#c3c2b7;--t3:#898781}}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:1rem;max-width:480px;margin:0 auto}
+h1{font-size:18px;font-weight:600}.sub{font-size:13px;color:var(--t3);margin-bottom:1.25rem}
+.lbl{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.5rem}
+.card{background:var(--s);border:.5px solid var(--b);border-radius:var(--r);padding:1rem 1.125rem;margin-bottom:1rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m{background:var(--s2);border-radius:8px;padding:.625rem .875rem}
+.ml{font-size:11px;color:var(--t3);margin-bottom:3px}
+.mv{font-size:20px;font-weight:600;color:var(--t);line-height:1.1}
+.mu{font-size:12px;font-weight:400;color:var(--t2);margin-left:1px}
+.mv.good{color:var(--g)}.mv.warn{color:var(--a)}.mv.bad{color:var(--re)}
+.fb{height:5px;border-radius:3px;background:var(--s2);margin-top:5px;overflow:hidden}
+.ff{height:100%;border-radius:3px}
+.act{padding:.75rem 0;border-top:.5px solid var(--b)}
+.act:first-child{border-top:none;padding-top:0}.act:last-child{padding-bottom:0}
+.ar{display:flex;justify-content:space-between;align-items:flex-start}
+.an{font-size:14px;font-weight:500}.ad{font-size:12px;color:var(--t3);white-space:nowrap;margin-left:8px}
+.am{display:flex;gap:10px;flex-wrap:wrap;margin-top:3px}
+.as{font-size:12px;color:var(--t2)}.as b{color:var(--t);font-weight:500}
+.zs{display:flex;height:4px;border-radius:2px;overflow:hidden;gap:1px;margin-top:6px}
+.z{height:100%}
+.sl{font-size:13px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:.5px solid var(--b)}
+.btn{display:block;width:100%;padding:.75rem;border-radius:var(--r);border:.5px solid var(--b);background:var(--s);color:var(--t);font-size:14px;font-weight:500;cursor:pointer;text-align:center;margin-bottom:.5rem}
+.btn.p{background:#0b0b0b;color:#fff;border-color:transparent}
+@media(prefers-color-scheme:dark){.btn.p{background:#f5f4f0;color:#0b0b0b}}
+.btn:active{opacity:.8}
+.status{text-align:center;padding:2rem 1rem;color:var(--t3);font-size:14px}
+.err{color:var(--re)}
+.hr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.rb{font-size:13px;color:var(--bl);background:none;border:none;cursor:pointer;padding:0}
+</style>
+</head>
+<body>
+<div class="hr"><div><h1>G Man Coaching</h1><div class="sub" id="dt">Loading...</div></div><button class="rb" onclick="load()">&#8635; Refresh</button></div>
+<div id="loading" class="status">Fetching your data from intervals.icu...</div>
+<div id="main" style="display:none">
+<div class="lbl">Fitness & form</div>
+<div class="card"><div class="g2">
+<div class="m"><div class="ml">Fitness (CTL)</div><div class="mv" id="ctl">—</div></div>
+<div class="m"><div class="ml">Fatigue (ATL)</div><div class="mv" id="atl">—</div></div>
+<div class="m"><div class="ml">Form (TSB)</div><div class="mv" id="form">—</div><div class="fb"><div class="ff" id="ff" style="width:50%;background:#888"></div></div></div>
+<div class="m"><div class="ml">Ramp rate</div><div class="mv" id="ramp">—</div></div>
+</div></div>
+<div class="lbl">Today's wellness</div>
+<div class="card"><div class="g2">
+<div class="m"><div class="ml">Weight</div><div class="mv" id="wt">—</div></div>
+<div class="m"><div class="ml">Resting HR</div><div class="mv" id="rhr">—</div></div>
+<div class="m"><div class="ml">HRV</div><div class="mv" id="hrv">—</div></div>
+<div class="m"><div class="ml">Steps</div><div class="mv" id="steps">—</div></div>
+</div><div class="sl" id="sleep">Sleep: —</div></div>
+<div class="lbl">Recent activities</div>
+<div class="card" id="acts"></div>
+<div style="margin-top:1.25rem">
+<div class="lbl">Copy to Claude</div>
+<button class="btn p" onclick="copySnap()">Copy snapshot for Claude</button>
+<button class="btn" onclick="copyLatest()">Copy latest activity for Claude</button>
+</div>
+</div>
+<div id="err" class="status err" style="display:none"></div>
+<script>
+const B='https://bigg--95f23416724511f1b4ca1607ee4eb77e.web.val.run';
+let snap=null;
+const ZC=['#2a78d6','#1baf7a','#eda100','#e34948','#4a3aa7','#e87ba4','#eb6834'];
+function f(v,d=1){return v!=null?Number(v).toFixed(d):null}
+function fsl(s){if(!s)return null;return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m'}
+function fd(m){return m?(m/1000).toFixed(1)+'km':null}
+function ft(s){if(!s)return null;const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?h+'h '+m+'m':m+'m'}
+function fs(n){return n?Number(n).toLocaleString():null}
+function sm(id,v,u){const e=document.getElementById(id);e.innerHTML=v!=null?v+(u?'<span class="mu">'+u+'</span>':''):'<span style="color:var(--t3);font-size:14px">—</span>'}
+function fc(t){return t>10?'#1baf7a':t>-10?'#eda100':'#e34948'}
+function fcc(t){return t>10?'good':t<-20?'bad':'warn'}
+function ra(a){
+  const z=a.hrZoneTimes,tot=z?z.reduce((s,v)=>s+(v||0),0):0;
+  const zb=z&&tot>0?ZC.map((c,i)=>{const p=((z[i]||0)/tot*100).toFixed(1);return p>0?'<div class="z" style="width:'+p+'%;background:'+c+'"></div>':''}).join(''):'';
+  return '<div class="act"><div class="ar"><div class="an">'+(a.name||a.type)+'</div><div class="ad">'+(a.date||'')+'</div></div>'
+    +'<div class="am">'
+    +(fd(a.distanceMetres)?'<div class="as"><b>'+fd(a.distanceMetres)+'</b></div>':'')
+    +(ft(a.movingTimeSecs)?'<div class="as"><b>'+ft(a.movingTimeSecs)+'</b></div>':'')
+    +(a.avgHR?'<div class="as">HR <b>'+Math.round(a.avgHR)+'</b>bpm</div>':'')
+    +(a.hrLoad?'<div class="as">Load <b>'+Math.round(a.hrLoad)+'</b></div>':'')
+    +(a.eftp?'<div class="as">eFTP <b>'+Math.round(a.eftp)+'W</b></div>':'')
+    +(a.elevationGain?'<div class="as">&#8679; <b>'+Math.round(a.elevationGain)+'m</b></div>':'')
+    +'</div>'+(zb?'<div class="zs">'+zb+'</div>':'')+'</div>';
+}
+function bct(){
+  if(!snap)return '';
+  const fi=snap.fitness||{},w=snap.wellness||{};
+  const tsb=fi.ctl!=null&&fi.atl!=null?(fi.ctl-fi.atl).toFixed(1):'—';
+  let t='## Intervals.icu snapshot — '+snap.date+'\n\n';
+  t+='Fitness: CTL '+f(fi.ctl,1)+' | ATL '+f(fi.atl,1)+' | Form '+tsb+' | Ramp '+f(fi.rampRate,1)+'/wk\n';
+  t+='Wellness: Weight '+(w.weight?f(w.weight,1)+'kg':'—')+' | RHR '+(w.restingHR?Math.round(w.restingHR)+'bpm':'—')+' | HRV '+(w.hrv?Math.round(w.hrv)+'ms':'—')+' | Steps '+(fs(w.steps)||'—')+' | Sleep '+(fsl(w.sleepSecs)||'—')+'\n\n';
+  t+='Recent activities:\n';
+  (snap.recentActivities||[]).forEach(a=>{
+    t+='- '+a.date+' '+a.name+' ('+a.type+'): '+(fd(a.distanceMetres)||'—')+', '+(ft(a.movingTimeSecs)||'—');
+    if(a.avgHR)t+=', HR '+Math.round(a.avgHR)+'bpm';
+    if(a.hrLoad)t+=', Load '+Math.round(a.hrLoad);
+    if(a.eftp)t+=', eFTP '+Math.round(a.eftp)+'W';
+    t+='\n';
+  });
+  return t;
+}
+function render(d){
+  snap=d;
+  document.getElementById('dt').textContent='Snapshot: '+d.date;
+  const fi=d.fitness||{},w=d.wellness||{};
+  const tsb=fi.ctl!=null&&fi.atl!=null?fi.ctl-fi.atl:null;
+  sm('ctl',f(fi.ctl,1));sm('atl',f(fi.atl,1));
+  const fe=document.getElementById('form');
+  fe.textContent=tsb!=null?tsb.toFixed(1):'—';
+  fe.className='mv '+(tsb!=null?fcc(tsb):'');
+  if(tsb!=null){const p=Math.min(100,Math.max(0,((tsb+30)/60)*100));document.getElementById('ff').style.cssText='width:'+p+'%;background:'+fc(tsb)+';height:100%;border-radius:3px'}
+  sm('ramp',fi.rampRate!=null?f(fi.rampRate,1):null,'/wk');
+  sm('wt',w.weight!=null?f(w.weight,1):null,'kg');
+  sm('rhr',w.restingHR!=null?Math.round(w.restingHR):null,'bpm');
+  sm('hrv',w.hrv!=null?Math.round(w.hrv):null,'ms');
+  sm('steps',fs(w.steps));
+  document.getElementById('sleep').textContent='Sleep: '+(fsl(w.sleepSecs)||'No data');
+  const al=d.recentActivities||[];
+  document.getElementById('acts').innerHTML=al.length?al.map(ra).join(''):'<div style="color:var(--t3);font-size:13px">No recent activities</div>';
+  document.getElementById('loading').style.display='none';
+  document.getElementById('main').style.display='block';
+}
+async function load(){
+  document.getElementById('loading').style.display='block';
+  document.getElementById('main').style.display='none';
+  document.getElementById('err').style.display='none';
+  document.getElementById('dt').textContent='Loading...';
+  try{
+    const r=await fetch(B+'?mode=snapshot');
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    render(d);
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('err').style.display='block';
+    document.getElementById('err').textContent='Could not load: '+e.message;
+  }
+}
+async function copySnap(){
+  if(!snap)return;
+  try{await navigator.clipboard.writeText(bct());alert('Copied — paste into Claude');}
+  catch(e){alert('Copy failed: '+e.message);}
+}
+async function copyLatest(){
+  try{
+    const r=await fetch(B+'?mode=latest');
+    const d=await r.json();
+    let t='## Latest activity — '+(d.name||d.type)+' ('+(d.start_date_local?.split('T')[0])+')\n\n'+JSON.stringify(d,null,2);
+    await navigator.clipboard.writeText(t);
+    alert('Copied — paste into Claude');
+  }catch(e){alert('Copy failed: '+e.message);}
+}
+load();
+</script>
+</body>
+</html>
